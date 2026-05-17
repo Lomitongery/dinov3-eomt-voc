@@ -86,7 +86,7 @@ class Transforms(nn.Module):
     ) -> tuple[Tensor, dict[str, Union[Tensor, TVTensor]]]:
         pad_h = max(0, self.img_size[-2] - img.shape[-2])
         pad_w = max(0, self.img_size[-1] - img.shape[-1])
-        padding = [0, 0, pad_w, pad_h]
+        padding = [0, pad_w, 0, pad_h]
 
         img = F.pad(img, padding)
         target["masks"] = F.pad(target["masks"], padding)

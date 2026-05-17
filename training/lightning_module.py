@@ -851,8 +851,10 @@ class LightningModule(lightning.LightningModule):
         return per_pixel_targets
 
     def on_save_checkpoint(self, checkpoint):
+        import re
         checkpoint["state_dict"] = {
-            k.replace("._orig_mod", ""): v for k, v in checkpoint["state_dict"].items()
+            re.sub(r"^_orig_mod\.|^module\.", "", k): v
+            for k, v in checkpoint["state_dict"].items()
         }
         checkpoint["hyper_parameters"] = {}
 

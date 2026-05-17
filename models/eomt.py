@@ -175,9 +175,11 @@ class EoMT(nn.Module):
             dtype=torch.bool,
             device=x.device,
         )
+        num_patches = x.shape[1] - self.num_q - self.encoder.backbone.num_prefix_tokens
+        grid_dim = int(math.sqrt(num_patches))
         interpolated = F.interpolate(
             mask_logits,
-            self.encoder.backbone.patch_embed.grid_size,
+            (grid_dim, grid_dim),
             mode="bilinear",
         )
         interpolated = interpolated.view(interpolated.size(0), interpolated.size(1), -1)
