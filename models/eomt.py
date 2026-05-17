@@ -87,19 +87,12 @@ class EoMT(nn.Module):
         x: torch.Tensor,
         mask: Optional[torch.Tensor],
         rope: Optional[torch.Tensor],
+        has_queries: bool = False,
     ):
         B, N, C = x.shape
 
         if rope is not None:
-            # When queries are present, the sequence is [queries, prefix_tokens, patch_tokens].
-            # RoPE must only be applied to patch_tokens (and prefix_tokens skip it).
-            # EvaAttention applies RoPE to tokens after num_prefix_tokens, but with queries
-            # inserted before prefix, the indices are wrong and rope is too small.
-            # Handle this manually: split queries from prefix+patches.
-            num_prefix = self.encoder.backbone.num_prefix_tokens
-            num_patches_expected = self.encoder.backbone.patch_embed.grid_size[0] * self.encoder.backbone.patch_embed.grid_size[1]
-
-            if N > num_prefix + num_patches_expected:
+            if has_queries:
                 # Queries are present — split and handle RoPE manually
                 queries = x[:, :self.num_q, :]
                 prefix_and_patches = x[:, self.num_q:, :]
@@ -242,7 +235,8 @@ class EoMT(nn.Module):
                 attn = block.attn
             else:
                 attn = block.attention
-            attn_out = self._attn(attn, block.norm1(x), attn_mask, rope=rope)
+            has_q = i >= len(self.encoder.backbone.blocks) - self.num_blocks
+            attn_out = self._attn(attn, block.norm1(x), attn_mask, rope=rope, has_queries=has_q)
             if hasattr(block, "ls1"):
                 x = x + block.ls1(attn_out)
             elif hasattr(block, "layer_scale1"):

@@ -111,6 +111,9 @@ class Transforms(nn.Module):
 
         valid = target["masks"].flatten(1).any(1)
         if not valid.any():
+            valid_orig = target_orig["masks"].flatten(1).any(1)
+            if not valid_orig.any():
+                return img, target
             return self(img_orig, target_orig)
 
         target = self._filter(target, valid)
