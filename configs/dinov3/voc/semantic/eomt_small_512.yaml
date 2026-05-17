@@ -1,0 +1,52 @@
+trainer:
+  max_epochs: 50
+  accelerator: auto
+  strategy: auto
+  devices: 1
+  precision: 16-mixed
+  check_val_every_n_epoch: 5
+  accumulate_grad_batches: 8
+  logger:
+    class_path: lightning.pytorch.loggers.tensorboard.TensorBoardLogger
+    init_args:
+      save_dir: "lightning_logs"
+      name: "voc_semantic_eomt_small_512"
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        dirpath: "checkpoints"
+        filename: "eomt_voc_{epoch}"
+        monitor: "metrics/val_iou_all"
+        mode: "max"
+        save_last: true
+        save_top_k: 3
+    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: "step"
+model:
+  class_path: training.mask_classification_semantic.MaskClassificationSemantic
+  init_args:
+    num_classes: 20
+    img_size: [512, 512]
+    no_object_coefficient: 0.05
+    attn_mask_annealing_enabled: True
+    attn_mask_annealing_start_steps: [0, 728, 1274, 1820]
+    attn_mask_annealing_end_steps: [1092, 1820, 2548, 3276]
+    network:
+      class_path: models.eomt.EoMT
+      init_args:
+        num_q: 20
+        num_blocks: 4
+        masked_attn_enabled: True
+        encoder:
+          class_path: models.vit.ViT
+          init_args:
+            img_size: [512, 512]
+            patch_size: 16
+            backbone_name: "vit_small_patch16_dinov3.lvd1689m"
+data:
+  class_path: datasets.voc_semantic.VOCSemantic
+  init_args:
+    img_size: [512, 512]
+    num_classes: 20
+    ignore_idx: 255
